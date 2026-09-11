@@ -1,0 +1,11 @@
+{
+  "name": "store_steam",
+  "displayName": "Steam",
+  "version": "0.1.0",
+  "author": "AdamFull",
+  "description": "Steamworks storefront backend.",
+  "license": null,
+  "created": "2026-09-11",
+  "repository": null,
+  "revision": null
+}

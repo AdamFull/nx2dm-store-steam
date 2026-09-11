@@ -1,0 +1,4 @@
+# The Steamworks SDK: a licence-gated partner download from Valve, no
+# fetchable URL - it can never be committed. Developer-provided locally; see
+# NxStoreSteam.cmake.
+/third_party/SteamSDK/
