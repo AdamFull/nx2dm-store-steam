@@ -4,6 +4,7 @@ add_executable(nx_store_steam_tests
         test_store_steam_module.cpp
         test_store_steam_services.cpp
         test_store_steam_extras.cpp
+        test_store_steam_scripting.cpp
         ../store_steam_module.cpp
         ../store_steam_config.cpp
         ../store_steam_services.cpp
