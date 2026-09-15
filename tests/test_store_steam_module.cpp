@@ -1,6 +1,6 @@
 #include "framework/nxtest.h"
 
-#include "core/app/module.h"
+#include "core/app/module_system/module.h"
 
 #include <steam/steam_api.h>
 
