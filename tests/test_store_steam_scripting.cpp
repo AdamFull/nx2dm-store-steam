@@ -1,7 +1,7 @@
 #include "framework/nxtest.h"
 
-#include "core/app/engine.h"
-#include "core/script/script_host.h"
+#include "app/engine.h"
+#include "script/script_host.h"
 #include "store_steam/store_steam_leaderboards.h"
 #include "store_steam/store_steam_overlay.h"
 #include "store_steam/store_steam_scripting.h"

@@ -4,7 +4,7 @@
 #include "store_steam/store_steam_overlay.h"
 #include "store_steam/store_steam_workshop.h"
 
-#include "core/script/script_host.h"
+#include "script/script_host.h"
 
 #include <memory>
 
