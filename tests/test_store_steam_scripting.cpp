@@ -1,6 +1,7 @@
 #include "framework/nxtest.h"
 
 #include "app/engine.h"
+#include "script/luau/luau_backend.h"
 #include "script/script_host.h"
 #include "store_steam/store_steam_leaderboards.h"
 #include "store_steam/store_steam_overlay.h"
@@ -58,6 +59,7 @@ TEST_CASE("store_steam scripting: every service is exposed with the shape a "
       {"store_steam_workshop_subscribe_pending", "()->(boolean)"},
       {"store_steam_workshop_subscribe_error", "()->(string)"},
       {"store_steam_workshop_refresh_subscribed", "()->(boolean)"},
+      {"store_steam_workshop_subscribed", "()->({number})"},
       {"store_steam_workshop_subscribed_count", "()->(number)"},
       {"store_steam_workshop_subscribed_id", "(number)->(number)"},
       {"store_steam_workshop_is_installed", "(number)->(boolean)"},
@@ -73,6 +75,7 @@ TEST_CASE("store_steam scripting: every service is exposed with the shape a "
       {"store_steam_leaderboard_upload_succeeded", "()->(boolean)"},
       {"store_steam_leaderboard_download", "(number,number)->(boolean)"},
       {"store_steam_leaderboard_download_pending", "()->(boolean)"},
+      {"store_steam_leaderboard_entries", "()->({{rank: number, score: number, name: string}})"},
       {"store_steam_leaderboard_entry_count", "()->(number)"},
       {"store_steam_leaderboard_entry_rank", "(number)->(number)"},
       {"store_steam_leaderboard_entry_score", "(number)->(number)"},
@@ -111,4 +114,28 @@ TEST_CASE("store_steam scripting: the module hands them over on its own") {
   expose_store_steam_extras(direct, workshop, leaderboards, overlay);
   CHECK(host.exposed_count() == direct.exposed_count());
   CHECK(host.exposed_count() > 0u);
+}
+
+// No Steam client runs here, so both lists are empty - but they arrive as
+// tables a script can walk, agreeing with the counts beside them.
+TEST_CASE("store_steam scripting: the lists come back as tables") {
+  SteamWorkshop workshop;
+  SteamLeaderboards leaderboards;
+  SteamOverlay overlay;
+  script::Host host;
+  REQUIRE(host.set_backend(script::luau_backend()));
+  expose_store_steam_extras(host, workshop, leaderboards, overlay);
+  REQUIRE(host.bind());
+  const nx::string_view source = R"(
+local subscribed = host.store_steam_workshop_subscribed()
+assert(type(subscribed) == "table", "subscribed")
+assert(#subscribed == host.store_steam_workshop_subscribed_count(), "count")
+local entries = host.store_steam_leaderboard_entries()
+assert(type(entries) == "table", "entries")
+assert(#entries == host.store_steam_leaderboard_entry_count(), "entry count")
+return {}
+)";
+  CHECK(host.load("steam_lists",
+                  {reinterpret_cast<const std::byte *>(source.data()),
+                   source.size()}));
 }

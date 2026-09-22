@@ -9,6 +9,16 @@
 #include <memory>
 
 namespace nxm::store_steam {
+namespace {
+
+/// One leaderboard row as a script reads it.
+struct LeaderboardEntry {
+  f64 rank = 0.0;
+  f64 score = 0.0;
+  nx::string_view name;
+};
+
+}
 
 void expose_store_steam_extras(nxe::script::Host &host, SteamWorkshop &workshop,
                                SteamLeaderboards &leaderboards,
@@ -47,6 +57,13 @@ void expose_store_steam_extras(nxe::script::Host &host, SteamWorkshop &workshop,
 
   host.expose_as("store_steam_workshop_refresh_subscribed",
                  [&workshop]() { workshop.refresh_subscribed(); return true; });
+  host.expose_as("store_steam_workshop_subscribed", [&workshop] {
+    nx::vector<f64> out;
+    out.reserve(workshop.subscribed_count());
+    for (usize i = 0; i < workshop.subscribed_count(); ++i)
+      out.push_back(static_cast<f64>(workshop.subscribed_id(i)));
+    return out;
+  });
   host.expose_as("store_steam_workshop_subscribed_count", [&workshop]() {
     return static_cast<f64>(workshop.subscribed_count());
   });
@@ -114,6 +131,15 @@ void expose_store_steam_extras(nxe::script::Host &host, SteamWorkshop &workshop,
                  });
   host.expose_as("store_steam_leaderboard_download_pending", [&leaderboards]() {
     return leaderboards.download_pending();
+  });
+  host.expose_as("store_steam_leaderboard_entries", [&leaderboards] {
+    nx::vector<LeaderboardEntry> out;
+    out.reserve(leaderboards.entry_count());
+    for (usize i = 0; i < leaderboards.entry_count(); ++i)
+      out.push_back({static_cast<f64>(leaderboards.entry_rank(i)),
+                     static_cast<f64>(leaderboards.entry_score(i)),
+                     leaderboards.entry_name(i)});
+    return out;
   });
   host.expose_as("store_steam_leaderboard_entry_count", [&leaderboards]() {
     return static_cast<f64>(leaderboards.entry_count());

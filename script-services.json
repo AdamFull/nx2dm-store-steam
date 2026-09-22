@@ -42,6 +42,10 @@
       "signature": "()->(boolean)"
     },
     {
+      "name": "store_steam_workshop_subscribed",
+      "signature": "()->({number})"
+    },
+    {
       "name": "store_steam_workshop_subscribed_count",
       "signature": "()->(number)"
     },
@@ -100,6 +104,10 @@
     {
       "name": "store_steam_leaderboard_download_pending",
       "signature": "()->(boolean)"
+    },
+    {
+      "name": "store_steam_leaderboard_entries",
+      "signature": "()->({{rank: number, score: number, name: string}})"
     },
     {
       "name": "store_steam_leaderboard_entry_count",
