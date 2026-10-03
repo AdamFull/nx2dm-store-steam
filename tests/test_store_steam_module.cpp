@@ -29,3 +29,21 @@ TEST_CASE("store_steam: SteamAPI_Init reaches the real SDK") {
     CHECK(SteamUser() == nullptr);
   }
 }
+
+TEST_CASE("store_steam: the module offers every neutral service, the "
+          "user's identity among them") {
+  for (const nxe::ModuleFactory factory : nxe::enabled_module_factories()) {
+    const std::unique_ptr<nxe::Module> module = factory();
+    if (module == nullptr || module->name() != "store_steam")
+      continue;
+    usize offered = 0;
+    bool identity = false;
+    for (const nxe::ModuleService &service :
+         module->descriptor().provided_services) {
+      ++offered;
+      identity = identity || service.id == "store.identity";
+    }
+    CHECK(offered == 6u);
+    CHECK(identity);
+  }
+}

@@ -1,5 +1,7 @@
 #include "store_steam/store_steam_services.h"
 
+#include "core/foundation/strings/base64.h"
+
 #include "core/foundation/strings/format.h"
 
 #include <utility>
@@ -262,4 +264,49 @@ nx::vector<nx::string> SteamPresence::friend_names() const {
   return out;
 }
 
+// -- SteamIdentity ---------------------------------------------------
+
+bool SteamIdentity::request_ticket() {
+  ISteamUser *const user = SteamUser();
+  if (m_pending || user == nullptr || !user->BLoggedOn())
+    return false;
+  const SteamAPICall_t call = user->RequestEncryptedAppTicket(nullptr, 0);
+  if (call == k_uAPICallInvalid)
+    return false;
+  m_ticket.clear();
+  m_error.clear();
+  m_pending = true;
+  m_call.Set(call, this, &SteamIdentity::on_ticket);
+  return true;
+}
+
+void SteamIdentity::on_ticket(EncryptedAppTicketResponse_t *const response,
+                              const bool io_failure) {
+  m_pending = false;
+  m_ticket.clear();
+  if (io_failure || response == nullptr) {
+    m_error = nx::string("Steam could not be reached");
+    return;
+  }
+  if (response->m_eResult != k_EResultOK) {
+    m_error = response->m_eResult == k_EResultLimitExceeded
+                  ? nx::string("Steam gives one ticket a minute")
+                  : nx::format("Steam refused the ticket ({})",
+                               static_cast<int>(response->m_eResult));
+    return;
+  }
+  // Steam's tickets are well under this.
+  u8 bytes[2048];
+  uint32 size = 0;
+  ISteamUser *const user = SteamUser();
+  if (user == nullptr ||
+      !user->GetEncryptedAppTicket(bytes, static_cast<int>(sizeof(bytes)),
+                                   &size) ||
+      size == 0 || size > sizeof(bytes)) {
+    m_error = nx::string("Steam's ticket could not be read");
+    return;
+  }
+  m_error.clear();
+  m_ticket = nx::base64_encode({bytes, size});
+}
 }

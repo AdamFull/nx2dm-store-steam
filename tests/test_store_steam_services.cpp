@@ -58,3 +58,39 @@ TEST_CASE(
   CHECK(presence.friend_count() == 0u);
   CHECK(presence.friend_names().empty());
 }
+
+TEST_CASE("store_steam services: SteamIdentity refuses safely with no client") {
+  SteamIdentity identity;
+  CHECK(identity.ticket_kind() == "steam");
+  CHECK_FALSE(identity.request_ticket());
+  CHECK_FALSE(identity.ticket_pending());
+  CHECK(identity.ticket().empty());
+  CHECK(identity.ticket_error().empty());
+}
+
+TEST_CASE("store_steam services: SteamIdentity reports what Steam answers") {
+  SteamIdentity identity;
+  identity.on_ticket(nullptr, true);
+  CHECK_FALSE(identity.ticket_pending());
+  CHECK(identity.ticket().empty());
+  CHECK(identity.ticket_error() == "Steam could not be reached");
+  EncryptedAppTicketResponse_t limited{};
+  limited.m_eResult = k_EResultLimitExceeded;
+  identity.on_ticket(&limited, false);
+  CHECK(identity.ticket_error() == "Steam gives one ticket a minute");
+  EncryptedAppTicketResponse_t refused{};
+  refused.m_eResult = k_EResultAccessDenied;
+  identity.on_ticket(&refused, false);
+  CHECK(identity.ticket_error().starts_with("Steam refused the ticket"));
+  // A failure on the way is a failure, whatever came with it.
+  EncryptedAppTicketResponse_t lost{};
+  lost.m_eResult = k_EResultOK;
+  identity.on_ticket(&lost, true);
+  CHECK(identity.ticket_error() == "Steam could not be reached");
+  // Answered OK, but with no client there is no ticket to read.
+  EncryptedAppTicketResponse_t ok{};
+  ok.m_eResult = k_EResultOK;
+  identity.on_ticket(&ok, false);
+  CHECK(identity.ticket().empty());
+  CHECK(identity.ticket_error() == "Steam's ticket could not be read");
+}

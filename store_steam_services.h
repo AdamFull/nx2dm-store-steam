@@ -8,7 +8,7 @@
 
 namespace nxm::store_steam {
 
-/// The five neutral services (store_service.h), backed by the real
+/// The six neutral services (store_service.h), backed by the real
 /// Steamworks interfaces. Each is a plain class rather than nested inside
 /// store_steam_module.cpp so it's directly testable - see
 /// tests/test_store_steam_services.cpp for the guard-path coverage (every
@@ -66,4 +66,30 @@ public:
   [[nodiscard]] nx::vector<nx::string> friend_names() const override;
 };
 
+/// Steam's encrypted app ticket. Steam answers through a call result that
+/// SteamAPI_RunCallbacks delivers on the pump's thread, and refuses more
+/// than one request a minute.
+class SteamIdentity final : public store::StoreIdentity {
+public:
+  [[nodiscard]] nx::string_view ticket_kind() const noexcept override {
+    return "steam";
+  }
+  bool request_ticket() override;
+  [[nodiscard]] bool ticket_pending() const override { return m_pending; }
+  [[nodiscard]] nx::string_view ticket() const override {
+    return m_ticket.view();
+  }
+  [[nodiscard]] nx::string_view ticket_error() const override {
+    return m_error.view();
+  }
+
+  /// What a call result reports, taken as Steam would hand it over.
+  void on_ticket(EncryptedAppTicketResponse_t *response, bool io_failure);
+
+private:
+  CCallResult<SteamIdentity, EncryptedAppTicketResponse_t> m_call;
+  bool m_pending = false;
+  nx::string m_ticket;
+  nx::string m_error;
+};
 }

@@ -44,6 +44,7 @@ constexpr nxe::ModuleService PROVIDED_SERVICES[] = {
     {.id = store::kAchievementsService, .version = {1, 0, 0}},
     {.id = store::kCloudSavesService, .version = {1, 0, 0}},
     {.id = store::kPresenceService, .version = {1, 0, 0}},
+    {.id = store::kIdentityService, .version = {1, 0, 0}},
 };
 
 class StoreSteamModule final : public nxe::Module {
@@ -66,14 +67,19 @@ public:
     store::StoreAchievements &achievements = m_achievements;
     store::StoreCloudSaves &cloud_saves = m_cloud_saves;
     store::StorePresence &presence = m_presence;
-    return registrar.provide(store::kCoreService, PROVIDED_SERVICES[0].version, core) &&
-           registrar.provide(store::kIapService, PROVIDED_SERVICES[1].version, iap) &&
+    store::StoreIdentity &identity = m_identity;
+    return registrar.provide(store::kCoreService, PROVIDED_SERVICES[0].version,
+                             core) &&
+           registrar.provide(store::kIapService, PROVIDED_SERVICES[1].version,
+                             iap) &&
            registrar.provide(store::kAchievementsService,
-                              PROVIDED_SERVICES[2].version, achievements) &&
+                             PROVIDED_SERVICES[2].version, achievements) &&
            registrar.provide(store::kCloudSavesService,
-                              PROVIDED_SERVICES[3].version, cloud_saves) &&
-           registrar.provide(store::kPresenceService, PROVIDED_SERVICES[4].version,
-                              presence);
+                             PROVIDED_SERVICES[3].version, cloud_saves) &&
+           registrar.provide(store::kPresenceService,
+                             PROVIDED_SERVICES[4].version, presence) &&
+           registrar.provide(store::kIdentityService,
+                             PROVIDED_SERVICES[5].version, identity);
   }
 
   bool on_attach(nxe::ModuleContext &ctx) override {
@@ -121,6 +127,7 @@ private:
   SteamAchievements m_achievements;
   SteamCloudSaves m_cloud_saves;
   SteamPresence m_presence;
+  SteamIdentity m_identity;
   bool m_initialized = false;
 
   // Steam-specific extras (Workshop, leaderboards, overlay) - never part of
