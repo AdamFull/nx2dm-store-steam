@@ -2,6 +2,7 @@
 
 #include "store_steam/store_steam_config.h"
 
+#include "core/foundation/serialization/ini.h"
 #include "core/foundation/vfs/vfs.h"
 
 namespace {
@@ -45,6 +46,28 @@ TEST_CASE("store_steam config: a valid file is parsed") {
       load_project_config();
   REQUIRE(config.has_value());
   CHECK(config->app_id == 480u);
+
+  nx::vfs::unmount(mount);
+}
+
+TEST_CASE("store_steam config: a cooked file is read before its source") {
+  const VfsScope scope;
+  REQUIRE(scope.initialized);
+  nx::vfs::MemoryDevice *const memory = nx::vfs::make_memory_device();
+  REQUIRE(memory != nullptr);
+  const auto cooked = nx::ini::parse("[store_steam]\napp_id = 730\n");
+  REQUIRE(cooked);
+  const nx::vector<u8> bytes = nx::ini::encode(*cooked);
+  memory->add("/config/store_steam.ini.nxb",
+              nx::blob<u8>({bytes.data(), bytes.size()}));
+  memory->add("/config/store_steam.ini",
+              as_bytes("[store_steam]\napp_id = 480\n"));
+  const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
+
+  const std::optional<nxm::store_steam::ServiceConfig> config =
+      load_project_config();
+  REQUIRE(config.has_value());
+  CHECK(config->app_id == 730u);
 
   nx::vfs::unmount(mount);
 }
