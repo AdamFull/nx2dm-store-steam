@@ -4,6 +4,10 @@
 
 #include <optional>
 
+namespace nx::vfs {
+class AsyncIoService;
+}
+
 namespace nxm::store_steam {
 
 /// VFS path StoreSteamModule::on_attach() checks automatically. A project
@@ -27,6 +31,6 @@ struct ServiceConfig {
 /// missing `app_id` - callers should treat both the same way, as "nothing to
 /// auto-configure with".
 [[nodiscard]] std::optional<ServiceConfig>
-load_project_config(nx::string_view path = kDefaultConfigPath);
-
+load_project_config(nx::vfs::AsyncIoService &io,
+                    nx::string_view path = kDefaultConfigPath);
 }

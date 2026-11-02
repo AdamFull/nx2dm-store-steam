@@ -3,9 +3,18 @@
 #include "store_steam/store_steam_config.h"
 
 #include "core/foundation/serialization/ini.h"
+#include "core/foundation/threading/thread_pool.h"
+#include "core/foundation/vfs/async_io.h"
 #include "core/foundation/vfs/vfs.h"
 
 namespace {
+
+nx::vfs::AsyncIoService &test_io() {
+  static nx::thread_pool pool(
+      {.thread_count = 1, .name = "nx-test-io", .blocking_threads = 1});
+  static nx::vfs::AsyncIoService io(pool);
+  return io;
+}
 
 using nxm::store_steam::load_project_config;
 
@@ -29,7 +38,7 @@ TEST_CASE("store_steam config: no file present is not an error") {
   REQUIRE(memory != nullptr);
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
-  CHECK_FALSE(load_project_config().has_value());
+  CHECK_FALSE(load_project_config(test_io()).has_value());
 
   nx::vfs::unmount(mount);
 }
@@ -43,7 +52,7 @@ TEST_CASE("store_steam config: a valid file is parsed") {
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
   const std::optional<nxm::store_steam::ServiceConfig> config =
-      load_project_config();
+      load_project_config(test_io());
   REQUIRE(config.has_value());
   CHECK(config->app_id == 480u);
 
@@ -65,7 +74,7 @@ TEST_CASE("store_steam config: a cooked file is read before its source") {
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
   const std::optional<nxm::store_steam::ServiceConfig> config =
-      load_project_config();
+      load_project_config(test_io());
   REQUIRE(config.has_value());
   CHECK(config->app_id == 730u);
 
@@ -80,7 +89,7 @@ TEST_CASE("store_steam config: missing app_id is refused") {
   memory->add("/config/store_steam.ini", as_bytes("[store_steam]\n"));
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
-  CHECK_FALSE(load_project_config().has_value());
+  CHECK_FALSE(load_project_config(test_io()).has_value());
 
   nx::vfs::unmount(mount);
 }
@@ -94,7 +103,7 @@ TEST_CASE("store_steam config: a non-numeric app_id is refused") {
              as_bytes("[store_steam]\napp_id = not-a-number\n"));
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
-  CHECK_FALSE(load_project_config().has_value());
+  CHECK_FALSE(load_project_config(test_io()).has_value());
 
   nx::vfs::unmount(mount);
 }
@@ -107,7 +116,7 @@ TEST_CASE("store_steam config: malformed ini does not crash") {
   memory->add("/config/store_steam.ini", as_bytes("this is not [ini at all"));
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
-  CHECK_FALSE(load_project_config().has_value());
+  CHECK_FALSE(load_project_config(test_io()).has_value());
 
   nx::vfs::unmount(mount);
 }
@@ -120,9 +129,9 @@ TEST_CASE("store_steam config: an explicit path overrides the default") {
   memory->add("/somewhere/else.ini", as_bytes("[store_steam]\napp_id = 7\n"));
   const nx::vfs::MountId mount = nx::vfs::mount("/", memory);
 
-  CHECK_FALSE(load_project_config().has_value());
+  CHECK_FALSE(load_project_config(test_io()).has_value());
   const std::optional<nxm::store_steam::ServiceConfig> config =
-      load_project_config("/somewhere/else.ini");
+      load_project_config(test_io(), "/somewhere/else.ini");
   REQUIRE(config.has_value());
   CHECK(config->app_id == 7u);
 
